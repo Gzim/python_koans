@@ -104,6 +104,7 @@ class AboutAttributeAccess(Koan):
         def __getattribute__(self, attr_name):
             #Uncomment for debugging info:
             #print 'Debug __getattribute__(' + type(self).__name__ + "." + attr_name + ") dict=" + str(self.__dict__)
+            #import ipdb;ipdb.set_trace()
             
             global stack_depth # We need something that is outside the scope of this class
             stack_depth += 1
@@ -116,7 +117,8 @@ class AboutAttributeAccess(Koan):
 
             # Using 'object' directly because using super() here will also
             # trigger a __getattribute__() call.
-            return object.__getattribute__(self, attr_name)                
+            return object.__getattribute__(self, attr_name)   
+            #object.__get... will bi called only 10 times recursivly because its local and not super.__getatr..             
             
         def my_method(self):
             pass
@@ -125,7 +127,7 @@ class AboutAttributeAccess(Koan):
         catcher = self.RecursiveCatcher()
         catcher.my_method()
         global stack_depth
-        self.assertEqual(__, stack_depth)
+        self.assertEqual(11, stack_depth)
         
     # ------------------------------------------------------------------
 
@@ -146,17 +148,17 @@ class AboutAttributeAccess(Koan):
         catcher = self.MinimalCatcher()
         catcher.my_method()
 
-        self.assertEqual(__, catcher.no_of_getattr_calls)
+        self.assertEqual(0, catcher.no_of_getattr_calls)
         
     def test_getattr_only_catches_unknown_attributes(self):
         catcher = self.MinimalCatcher()
         catcher.purple_flamingos()
         catcher.free_pie()
         
-        self.assertEqual(__,
+        self.assertEqual("DuffObject",
             type(catcher.give_me_duff_or_give_me_death()).__name__)
         
-        self.assertEqual(__, catcher.no_of_getattr_calls)
+        self.assertEqual(3, catcher.no_of_getattr_calls)
                 
     # ------------------------------------------------------------------
 
@@ -168,7 +170,6 @@ class AboutAttributeAccess(Koan):
                 new_attr_name = "my_" + new_attr_name
             elif attr_name[-3:] == 'pie':
                 new_attr_name = "a_" + new_attr_name               
-
             object.__setattr__(self, new_attr_name, value)                
 
     def test_setattr_intercepts_attribute_assignments(self):
@@ -177,9 +178,9 @@ class AboutAttributeAccess(Koan):
         fanboy.comic = 'The Laminator, issue #1'
         fanboy.pie = 'blueberry'
         
-        self.assertEqual(__, fanboy.a_pie) 
+        self.assertEqual("blueberry", fanboy.a_pie) #the value is "blueberry"
 
-        prefix = '__'
+        prefix = 'my'
         self.assertEqual("The Laminator, issue #1", getattr(fanboy, prefix + '_comic'))
 
     # ------------------------------------------------------------------
@@ -191,17 +192,15 @@ class AboutAttributeAccess(Koan):
                     
         def __setattr__(self, attr_name, value):
             new_attr_name =  attr_name
-            
             if attr_name[0] != '_':
                 new_attr_name = "altered_" + new_attr_name
-            
             object.__setattr__(self, new_attr_name, value)
             
     def test_it_modifies_external_attribute_as_expected(self):
         setter = self.ScarySetter()
         setter.e = "mc hammer"
         
-        self.assertEqual(__, setter.altered_e)
+        self.assertEqual("mc hammer", setter.altered_e)
         
     def test_it_mangles_some_internal_attributes(self):
         setter = self.ScarySetter()
@@ -209,9 +208,9 @@ class AboutAttributeAccess(Koan):
         try:
             coconuts = setter.num_of_coconuts
         except AttributeError:
-            self.assertEqual(__, setter.altered_num_of_coconuts)
+            self.assertEqual(9, setter.altered_num_of_coconuts)
 
     def test_in_this_case_private_attributes_remain_unmangled(self):
         setter = self.ScarySetter()
 
-        self.assertEqual(__, setter._num_of_private_coconuts)
+        self.assertEqual(2, setter._num_of_private_coconuts)
